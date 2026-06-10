@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
 export const protect = (
@@ -12,13 +12,14 @@ export const protect = (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
-    token = req.headers.authorization.split(" ")[1];
+    token =
+      req.headers.authorization.split(" ")[1];
   }
 
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: "No token provided",
+      message: "Not authorized",
     });
   }
 
@@ -29,6 +30,7 @@ export const protect = (
     );
 
     req.user = decoded;
+
     next();
   } catch {
     return res.status(401).json({

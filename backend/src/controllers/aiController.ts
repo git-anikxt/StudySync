@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 
-import { generateSummary } from "../services/aiService";
+import {
+  generateSummary,
+  generateFlashcards,
+} from "../services/aiService";
 
 export const summarizeNotes = async (
   req: Request,
@@ -21,6 +24,31 @@ export const summarizeNotes = async (
     res.status(500).json({
       success: false,
       message: "AI generation failed",
+    });
+  }
+};
+
+export const flashcards = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { notes } = req.body;
+
+    const result = await generateFlashcards(notes);
+
+    console.log("Flashcards Generated:", result);
+
+    res.json({
+      success: true,
+      flashcards: result,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Flashcard generation failed",
     });
   }
 };

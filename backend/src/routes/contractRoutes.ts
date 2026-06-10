@@ -1,23 +1,24 @@
 import express from "express";
 
 import {
-  summarizeNotes,
-  flashcards,
-} from "../controllers/aiController";
+  createContract,
+  getContracts,
+} from "../controllers/contractController";
+
 import { protect } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
 router.post(
-  "/summary",
+  "/",
   protect,
-  summarizeNotes
+  createContract
 );
 
-router.post(
-  "/flashcards",
+router.get(
+  "/",
   protect,
-  flashcards
+  getContracts
 );
 
 export default router;

@@ -32,6 +32,21 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 1,
     },
+
+    reputation: {
+      type: Number,
+      default: 0,
+    },
+
+    accountabilityScore: {
+      type: Number,
+      default: 100,
+    },
+
+    studyHours: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
