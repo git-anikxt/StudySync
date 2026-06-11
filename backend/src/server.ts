@@ -7,6 +7,10 @@ import { connectDB } from "./config/db";
 import goalRoutes from "./routes/goalRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import contractRoutes from "./routes/contractRoutes";
+import leaderRoutes from "./routes/leaderRoutes";
+import matchRoutes from "./routes/matchRoutes";
+import userRoutes from "./routes/userRoutes";
+import studyRoomRoutes from "./routes/studyRoomRoutes";
 
 dotenv.config();
 console.log("Gemini key exists:", !!process.env.GEMINI_API_KEY);
@@ -20,6 +24,10 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/contracts", contractRoutes);
+app.use("/api/leaderboard", leaderRoutes);
+app.use("/api/matches", matchRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/study-rooms", studyRoomRoutes);
 
 app.get("/", (_req, res) => {
   res.json({

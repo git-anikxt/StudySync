@@ -47,6 +47,20 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    semester: {
+  type: String,
+  default: "",
+},
+
+subjects: {
+  type: [String],
+  default: [],
+},
+
+availability: {
+  type: String,
+  default: "",
+},
   },
   {
     timestamps: true,
