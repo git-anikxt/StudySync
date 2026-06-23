@@ -55,3 +55,117 @@ export const getRooms = async (
     });
   }
 };
+
+export const joinRoom = async (
+  req: any,
+  res: any
+) => {
+  try {
+    const room =
+      await StudyRoom.findById(
+        req.params.id
+      );
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: "Room not found",
+      });
+    }
+
+    if (
+      room.participants.includes(
+        req.user.id
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Already joined",
+      });
+    }
+
+    room.participants.push(
+      req.user.id
+    );
+
+    await room.save();
+
+    res.json({
+      success: true,
+      message:
+        "Joined room successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+    });
+  }
+};
+
+export const leaveRoom = async (
+  req: any,
+  res: any
+) => {
+  try {
+    const room =
+      await StudyRoom.findById(
+        req.params.id
+      );
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+      });
+    }
+
+    room.participants =
+      room.participants.filter(
+        (id: any) =>
+          id.toString() !==
+          req.user.id
+      );
+
+    await room.save();
+
+    res.json({
+      success: true,
+      message:
+        "Left room successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+    });
+  }
+};
+
+export const getRoomParticipants = async (
+  req: any,
+  res: any
+) => {
+  try {
+    const room =
+      await StudyRoom.findById(
+        req.params.id
+      ).populate(
+        "participants",
+        "name xp reputation"
+      );
+
+    res.json({
+      success: true,
+      room,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+    });
+  }
+};

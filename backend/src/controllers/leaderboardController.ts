@@ -11,23 +11,36 @@ export const getLeaderboard = async (
       {
         password: 0,
       }
-    )
-      .sort({
-        reputation: -1,
-        xp: -1,
-      })
-      .limit(20);
-
-    const leaderboard = users.map(
-      (user, index) => ({
-        rank: index + 1,
-        name: user.name,
-        xp: user.xp,
-        reputation: user.reputation,
-        level: user.level,
-        streak: user.streak,
-      })
     );
+
+    const leaderboard = users
+      .map((user) => {
+        const score =
+          user.xp +
+          user.reputation * 2 +
+          user.streak * 5;
+
+        return {
+          name: user.name,
+          xp: user.xp,
+          reputation:
+            user.reputation,
+          level: user.level,
+          streak: user.streak,
+          badges:
+            user.badges,
+          score,
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.score - a.score
+      )
+      .slice(0, 20)
+      .map((user, index) => ({
+        rank: index + 1,
+        ...user,
+      }));
 
     res.json({
       success: true,

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 import Goal from "../models/Goal";
 import User from "../models/User";
+import { awardBadge } from "../utils/badgeUtils";
 
 export const createGoal = async (
   req: any,
@@ -143,7 +144,16 @@ export const completeGoal = async (
       user.reputation += 10;
 
       user.level =
-        Math.floor(user.xp / 500) + 1;
+        Math.floor(user.xp / 100) + 1;
+
+      if (
+        user.reputation >= 100
+      ) {
+        awardBadge(
+          user,
+          "Study Champion"
+        );
+      }
 
       await user.save();
     }
@@ -153,6 +163,10 @@ export const completeGoal = async (
       message: "Goal completed",
       xpEarned: 50,
       reputationEarned: 10,
+      currentLevel:
+        user?.level,
+      badges:
+        user?.badges,
     });
   } catch (error) {
     console.error(error);

@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema(
 
     accountabilityScore: {
       type: Number,
-      default: 100,
+      default: 0,
     },
 
     studyHours: {
@@ -61,6 +61,23 @@ availability: {
   type: String,
   default: "",
 },
+bio: {
+  type: String,
+  default: "",
+},
+
+avatar: {
+  type: String,
+  default: "",
+},
+lastStudyDate: {
+  type: Date,
+},
+badges: {
+  type: [String],
+  default: [],
+},
+
   },
   {
     timestamps: true,

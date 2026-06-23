@@ -1,5 +1,7 @@
 import Goal from "../models/Goal";
 import User from "../models/User";
+import Session from "../models/Session";
+import AccountabilityContract from "../models/AccountabilityContract";
 
 export const getDashboard = async (
   req: any,
@@ -13,7 +15,30 @@ export const getDashboard = async (
     const goals = await Goal.find({
       userId: req.user.id,
     });
+    const contracts =
+      await AccountabilityContract.find({
+        creatorId: req.user.id,
+      });
 
+    const activeContracts =
+      contracts.filter(
+        (contract) =>
+          contract.status === "active"
+      ).length;
+
+    const completedContracts =
+      contracts.filter(
+        (contract) =>
+          contract.status ===
+          "completed"
+      ).length;
+
+    const missedContracts =
+      contracts.filter(
+        (contract) =>
+          contract.status ===
+          "missed"
+      ).length;
     const completedGoals =
       goals.filter(
         (goal) =>
@@ -25,7 +50,20 @@ export const getDashboard = async (
         (goal) =>
           goal.status !== "completed"
       ).length;
+    const sessions = await Session.find({
+      userId: req.user.id,
+    });
 
+    const totalMinutes =
+      sessions.reduce(
+        (sum, session) =>
+          sum + session.duration,
+        0
+      );
+
+    const totalHours = Number(
+      (totalMinutes / 60).toFixed(1)
+    );
     res.json({
       success: true,
 
@@ -41,6 +79,13 @@ export const getDashboard = async (
         completedGoals,
 
         activeGoals,
+        studyHours: totalHours,
+        badges: user?.badges,
+        accountabilityScore:
+          user?.accountabilityScore,
+        activeContracts,
+        completedContracts,
+        missedContracts,
       },
     });
   } catch (error) {
@@ -51,3 +96,4 @@ export const getDashboard = async (
     });
   }
 };
+

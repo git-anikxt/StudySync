@@ -3,7 +3,8 @@ import { Request, Response } from "express";
 import {
   generateSummary,
   generateFlashcards,
-} from "../services/aiService";
+  generateQuiz,
+} from "../services/ai";
 
 export const summarizeNotes = async (
   req: Request,
@@ -49,6 +50,31 @@ export const flashcards = async (
     res.status(500).json({
       success: false,
       message: "Flashcard generation failed",
+    });
+  }
+};
+
+export const quiz = async (
+  req: any,
+  res: any
+) => {
+  try {
+    const { notes } = req.body;
+
+    const result =
+      await generateQuiz(notes);
+
+    res.json({
+      success: true,
+      quiz: result,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Quiz generation failed",
     });
   }
 };

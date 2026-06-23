@@ -1,5 +1,10 @@
 {
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^3.0.82",
+    "@ai-sdk/groq": "^3.0.41",
+    "ai": "^6.0.206"
   }
 }

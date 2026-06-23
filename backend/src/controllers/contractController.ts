@@ -1,7 +1,7 @@
 import { Response } from "express";
 import User from "../models/User";
 import Goal from "../models/Goal";
-
+import { awardBadge } from "../utils/badgeUtils";
 import AccountabilityContract from "../models/AccountabilityContract";
 
 export const createContract = async (
@@ -167,15 +167,32 @@ export const completeContract = async (
     );
 
     if (user) {
-      user.xp += 100;
+  user.xp += 100;
 
-      user.reputation += 25;
+  user.reputation += 25;
 
-      user.level =
-        Math.floor(user.xp / 500) + 1;
+  user.level =
+    Math.floor(user.xp / 100) + 1;
 
-      await user.save();
-    }
+  if (user.reputation >= 100) {
+    awardBadge(
+      user,
+      "Study Champion"
+    );
+  }
+
+  if (
+    user.accountabilityScore >=
+    100
+  ) {
+    awardBadge(
+      user,
+      "Accountability Master"
+    );
+  }
+
+  await user.save();
+}
 
     res.json({
       success: true,

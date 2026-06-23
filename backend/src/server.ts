@@ -11,9 +11,11 @@ import leaderRoutes from "./routes/leaderRoutes";
 import matchRoutes from "./routes/matchRoutes";
 import userRoutes from "./routes/userRoutes";
 import studyRoomRoutes from "./routes/studyRoomRoutes";
-
+import chatRoutes from "./routes/chatRoutes";
+import ChatMessage from "./models/ChatMessage";
+import sessionRoutes from "./routes/sessionRoutes";
 dotenv.config();
-console.log("Gemini key exists:", !!process.env.GEMINI_API_KEY);
+console.log("Gemini key exists:", !!process.env.GOOGLE_GENERATIVE_AI_API_KEY);
 
 const app = express();
 
@@ -28,6 +30,8 @@ app.use("/api/leaderboard", leaderRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/study-rooms", studyRoomRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/sessions", sessionRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
@@ -38,8 +42,80 @@ app.get("/", (_req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
+import http from "http";
+import { Server } from "socket.io";
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log(
+    "User connected:",
+    socket.id
+  );
+
+  socket.on(
+    "join-room",
+    (roomId) => {
+      socket.join(roomId);
+
+      console.log(
+        `${socket.id} joined ${roomId}`
+      );
+    }
+  );
+
+  socket.on(
+    "leave-room",
+    (roomId) => {
+      socket.leave(roomId);
+    }
+  );
+
+  socket.on(
+  "send-message",
+  async (data) => {
+    try {
+      const {
+        roomId,
+        senderId,
+        senderName,
+        message,
+      } = data;
+
+      const savedMessage =
+        await ChatMessage.create({
+          roomId,
+          senderId,
+          senderName,
+          message,
+        });
+
+      io.to(roomId).emit(
+        "receive-message",
+        savedMessage
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
+);
+  socket.on("disconnect", () => {
+    console.log(
+      "User disconnected"
+    );
+  });
+});
+
 connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  server.listen(PORT, () => {
+    console.log(
+      `Server running on port ${PORT}`
+    );
   });
 });
