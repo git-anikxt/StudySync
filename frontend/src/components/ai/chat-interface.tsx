@@ -9,6 +9,7 @@ import {
   type SummaryData,
   type QuizQuestion,
 } from './result-cards'
+import { generateSummary, generateFlashcards, } from '@/src/services/ai'
 
 type Message = {
   id: string
@@ -17,41 +18,6 @@ type Message = {
   summary?: SummaryData
   flashcards?: { title: string; cards: Flashcard[] }
   quiz?: { title: string; questions: QuizQuestion[] }
-}
-
-const sampleFlashcards: Flashcard[] = [
-  { front: 'What is an aldehyde?', back: 'A carbonyl group (C=O) bonded to at least one hydrogen atom.' },
-  { front: 'Define a nucleophile', back: 'An electron-rich species that donates a pair of electrons to form a bond.' },
-  { front: 'What is Markovnikov\u2019s rule?', back: 'In addition reactions, H attaches to the carbon with more hydrogens.' },
-  { front: 'What is a racemic mixture?', back: 'An equal mix of two enantiomers, optically inactive overall.' },
-]
-
-const sampleSummary: SummaryData = {
-  title: 'Organic Chemistry Ch.4 — Summary',
-  overview:
-    'This chapter covers carbonyl chemistry, focusing on the reactivity of aldehydes and ketones and the mechanisms of nucleophilic addition reactions.',
-  points: [
-    'Carbonyl carbons are electrophilic and attract nucleophiles.',
-    'Aldehydes are more reactive than ketones due to less steric hindrance.',
-    'Nucleophilic addition forms tetrahedral alkoxide intermediates.',
-    'Reduction with NaBH4 yields primary or secondary alcohols.',
-  ],
-}
-
-const sampleQuiz: { title: string; questions: QuizQuestion[] } = {
-  title: 'Practice Quiz — Carbonyl Chemistry',
-  questions: [
-    {
-      q: 'Which is more reactive toward nucleophilic addition?',
-      options: ['Ketones', 'Aldehydes', 'Carboxylic acids', 'Esters'],
-      answer: 1,
-    },
-    {
-      q: 'What reagent reduces an aldehyde to a primary alcohol?',
-      options: ['NaBH4', 'KMnO4', 'HCl', 'O3'],
-      answer: 0,
-    },
-  ],
 }
 
 const greeting: Message = {
@@ -66,21 +32,6 @@ const starters = [
   { icon: HelpCircle, label: 'Create a quiz' },
   { icon: Lightbulb, label: 'Explain a topic' },
 ]
-
-function responseFor(text: string): Message {
-  const lower = text.toLowerCase()
-  const id = `${Date.now()}-a`
-  if (lower.includes('flashcard')) {
-    return { id, role: 'assistant', text: 'Here\u2019s a flashcard deck from your notes:', flashcards: { title: 'Chemistry flashcards', cards: sampleFlashcards } }
-  }
-  if (lower.includes('quiz')) {
-    return { id, role: 'assistant', text: 'I generated a quick practice quiz for you:', quiz: sampleQuiz }
-  }
-  if (lower.includes('explain')) {
-    return { id, role: 'assistant', text: 'Nucleophilic addition happens when an electron-rich nucleophile attacks the electrophilic carbonyl carbon, breaking the C=O pi bond and forming a tetrahedral alkoxide intermediate that is then protonated to give an alcohol.' }
-  }
-  return { id, role: 'assistant', text: 'Here\u2019s a summary of your notes:', summary: sampleSummary }
-}
 
 const actionPrompts: Record<string, string> = {
   summary: 'Summarize my notes',
@@ -101,18 +52,68 @@ export function ChatInterface({
   const [thinking, setThinking] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const send = (text: string) => {
-    const trimmed = text.trim()
-    if (!trimmed) return
-    const userMsg: Message = { id: `${Date.now()}-u`, role: 'user', text: trimmed }
-    setMessages((prev) => [...prev, userMsg])
-    setInput('')
-    setThinking(true)
-    setTimeout(() => {
-      setMessages((prev) => [...prev, responseFor(trimmed)])
-      setThinking(false)
-    }, 900)
+  const send = async (text: string) => {
+  const trimmed = text.trim()
+
+  if (!trimmed) return
+
+  const userMsg: Message = {
+    id: `${Date.now()}-u`,
+    role: 'user',
+    text: trimmed,
   }
+
+  setMessages((prev) => [...prev, userMsg])
+
+  setInput('')
+  setThinking(true)
+
+  try {
+  let aiMsg: Message
+
+if (
+  trimmed.toLowerCase().includes('flashcard')
+) {
+  const cards = JSON.parse(
+    await generateFlashcards(trimmed),
+  ) as Flashcard[]
+
+  aiMsg = {
+    id: `${Date.now()}-a`,
+    role: 'assistant',
+    text: 'Here are your flashcards.',
+    flashcards: {
+      title: 'AI Flashcards',
+      cards,
+    },
+  }
+} else {
+  const summary = JSON.parse(
+    await generateSummary(trimmed),
+  ) as SummaryData
+
+  aiMsg = {
+    id: `${Date.now()}-a`,
+    role: 'assistant',
+    text: 'Here is your summary.',
+    summary,
+  }
+}
+
+    setMessages((prev) => [...prev, aiMsg])
+  } catch (err) {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `${Date.now()}-e`,
+        role: 'assistant',
+        text: 'Failed to generate summary.',
+      },
+    ])
+  } finally {
+    setThinking(false)
+  }
+}
 
   useEffect(() => {
     if (pendingAction) {

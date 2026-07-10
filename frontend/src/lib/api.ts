@@ -17,8 +17,18 @@ api.interceptors.request.use((config) => {
 
   const token = localStorage.getItem('studysync-token')
 
+  console.log('JWT Token:', token)
+
   if (token) {
+    config.headers = config.headers ?? {}
     config.headers.Authorization = `Bearer ${token}`
+
+    console.log(
+      'Authorization Header:',
+      config.headers.Authorization,
+    )
+  } else {
+    console.log('No token found in localStorage')
   }
 
   return config
