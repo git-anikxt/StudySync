@@ -8,9 +8,8 @@ const contractSchema = new mongoose.Schema(
       required: true,
     },
 
-    witnessId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+    title: {
+      type: String,
       required: true,
     },
 
@@ -23,6 +22,16 @@ const contractSchema = new mongoose.Schema(
     deadline: {
       type: Date,
       required: true,
+    },
+
+    rewardXp: {
+      type: Number,
+      default: 100,
+    },
+
+    penaltyReputation: {
+      type: Number,
+      default: 20,
     },
 
     status: {

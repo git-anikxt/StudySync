@@ -4,7 +4,11 @@ export const generateQuiz = async (
   notes: string
 ) => {
   const prompt = `
-Create 5 multiple-choice questions (MCQs) from these study notes.
+Generate exactly 5 MCQs.
+
+Each question must have exactly 4 options.
+
+correctIndex must be between 0 and 3.
 
 Return ONLY valid JSON.
 
@@ -12,14 +16,14 @@ Format:
 
 [
   {
-    "question": "...",
-    "options": [
-      "Option A",
-      "Option B",
-      "Option C",
-      "Option D"
+    "question":"...",
+    "options":[
+      "...",
+      "...",
+      "...",
+      "..."
     ],
-    "answer": "Correct Option"
+    "correctIndex":1
   }
 ]
 

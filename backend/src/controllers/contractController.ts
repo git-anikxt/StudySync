@@ -1,8 +1,8 @@
 import { Response } from "express";
 import User from "../models/User";
 import Goal from "../models/Goal";
-import { awardBadge } from "../utils/badgeUtils";
 import AccountabilityContract from "../models/AccountabilityContract";
+import { awardBadge } from "../utils/badgeUtils";
 
 export const createContract = async (
   req: any,
@@ -10,20 +10,32 @@ export const createContract = async (
 ) => {
   try {
     const {
-      witnessId,
+      title,
       goalId,
       deadline,
+      rewardXp,
+      penaltyReputation,
     } = req.body;
+
+    const goal = await Goal.findById(goalId);
+
+    if (!goal) {
+      return res.status(404).json({
+        success: false,
+        message: "Goal not found",
+      });
+    }
 
     const contract =
       await AccountabilityContract.create({
         creatorId: req.user.id,
-
-        witnessId,
-
+        title,
         goalId,
-
         deadline,
+        rewardXp:
+          rewardXp ?? 100,
+        penaltyReputation:
+          penaltyReputation ?? 20,
       });
 
     res.status(201).json({
@@ -35,69 +47,8 @@ export const createContract = async (
 
     res.status(500).json({
       success: false,
-    });
-  }
-};
-
-export const missContract = async (
-  req: any,
-  res: Response
-) => {
-  try {
-    const contract =
-      await AccountabilityContract.findById(
-        req.params.id
-      );
-
-    if (!contract) {
-      return res.status(404).json({
-        success: false,
-        message: "Contract not found",
-      });
-    }
-
-    if (contract.status !== "active") {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Contract already processed",
-      });
-    }
-
-    contract.status = "missed";
-
-    await contract.save();
-
-    const user = await User.findById(
-      req.user.id
-    );
-
-    if (user) {
-      user.reputation = Math.max(
-        0,
-        user.reputation - 15
-      );
-
-      user.accountabilityScore =
-        Math.max(
-          0,
-          user.accountabilityScore - 10
-        );
-
-      await user.save();
-    }
-
-    res.json({
-      success: true,
-      message: "Contract missed",
-      reputationLost: 15,
-      accountabilityLost: 10,
-    });
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
+      message:
+        "Failed to create contract",
     });
   }
 };
@@ -110,15 +61,10 @@ export const getContracts = async (
     const contracts =
       await AccountabilityContract.find({
         creatorId: req.user.id,
-      })
-        .populate(
-          "goalId",
-          "title status"
-        )
-        .populate(
-          "witnessId",
-          "name email"
-        );
+      }).populate(
+        "goalId",
+        "title status"
+      );
 
     res.json({
       success: true,
@@ -146,11 +92,15 @@ export const completeContract = async (
     if (!contract) {
       return res.status(404).json({
         success: false,
-        message: "Contract not found",
+        message:
+          "Contract not found",
       });
     }
 
-    if (contract.status !== "active") {
+    if (
+      contract.status !==
+      "active"
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -158,48 +108,133 @@ export const completeContract = async (
       });
     }
 
-    contract.status = "completed";
+    contract.status =
+      "completed";
 
     await contract.save();
 
-    const user = await User.findById(
-      req.user.id
-    );
+    const user =
+      await User.findById(
+        req.user.id
+      );
 
     if (user) {
-  user.xp += 100;
+      user.xp +=
+        contract.rewardXp;
 
-  user.reputation += 25;
+      user.reputation += 25;
 
-  user.level =
-    Math.floor(user.xp / 100) + 1;
+      user.accountabilityScore += 10;
 
-  if (user.reputation >= 100) {
-    awardBadge(
-      user,
-      "Study Champion"
-    );
-  }
+      user.level =
+        Math.floor(
+          user.xp / 100
+        ) + 1;
 
-  if (
-    user.accountabilityScore >=
-    100
-  ) {
-    awardBadge(
-      user,
-      "Accountability Master"
-    );
-  }
+      if (
+        user.reputation >=
+        100
+      ) {
+        awardBadge(
+          user,
+          "Study Champion"
+        );
+      }
 
-  await user.save();
-}
+      if (
+        user.accountabilityScore >=
+        100
+      ) {
+        awardBadge(
+          user,
+          "Accountability Master"
+        );
+      }
+
+      await user.save();
+    }
 
     res.json({
       success: true,
       message:
-        "Contract completed successfully",
-      xpEarned: 100,
+        "Commitment completed",
+      xpEarned:
+        contract.rewardXp,
       reputationEarned: 25,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+    });
+  }
+};
+
+export const missContract = async (
+  req: any,
+  res: Response
+) => {
+  try {
+    const contract =
+      await AccountabilityContract.findById(
+        req.params.id
+      );
+
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Contract not found",
+      });
+    }
+
+    if (
+      contract.status !==
+      "active"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Contract already processed",
+      });
+    }
+
+    contract.status =
+      "missed";
+
+    await contract.save();
+
+    const user =
+      await User.findById(
+        req.user.id
+      );
+
+    if (user) {
+      user.reputation =
+        Math.max(
+          0,
+          user.reputation -
+            contract.penaltyReputation
+        );
+
+      user.accountabilityScore =
+        Math.max(
+          0,
+          user.accountabilityScore -
+            10
+        );
+
+      await user.save();
+    }
+
+    res.json({
+      success: true,
+      message:
+        "Commitment missed",
+      reputationLost:
+        contract.penaltyReputation,
+      accountabilityLost: 10,
     });
   } catch (error) {
     console.error(error);

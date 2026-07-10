@@ -15,7 +15,17 @@ export const generateWithFallback =
           prompt,
         });
 
-      return text;
+      const cleaned = text
+  .replace(/```json/g, "")
+  .replace(/```/g, "")
+  .trim();
+
+try {
+  JSON.parse(cleaned);
+  return cleaned;
+} catch {
+  throw new Error("AI returned invalid JSON");
+}
     } catch (error) {
       console.log(
         "Gemini failed. Switching to Groq..."
@@ -28,6 +38,16 @@ export const generateWithFallback =
           prompt,
         });
 
-      return text;
+      const cleaned = text
+  .replace(/```json/g, "")
+  .replace(/```/g, "")
+  .trim();
+
+try {
+  JSON.parse(cleaned);
+  return cleaned;
+} catch {
+  throw new Error("AI returned invalid JSON");
+}
     }
   };

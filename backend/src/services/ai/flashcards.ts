@@ -3,16 +3,16 @@ import { generateWithFallback } from "./generate";
 export const generateFlashcards =
   async (notes: string) => {
     const prompt = `
-Create flashcards from these study notes.
+Create study flashcards.
+
+Generate exactly 10 flashcards.
 
 Return ONLY valid JSON.
 
-Format:
-
 [
   {
-    "question": "...",
-    "answer": "..."
+    "front":"...",
+    "back":"..."
   }
 ]
 

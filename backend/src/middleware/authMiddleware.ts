@@ -24,18 +24,25 @@ export const protect = (
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET as string
-    );
+  console.log("JWT_SECRET =", process.env.JWT_SECRET)
 
-    req.user = decoded;
+  const decoded = jwt.verify(
+    token,
+    process.env.JWT_SECRET as string
+  )
 
-    next();
-  } catch {
-    return res.status(401).json({
-      success: false,
-      message: "Invalid token",
-    });
-  }
+  console.log("Decoded =", decoded)
+
+  req.user = decoded
+
+  next()
+} catch (error) {
+  console.log("===== JWT ERROR =====");
+  console.log(error);
+
+  return res.status(401).json({
+    success: false,
+    message: "Invalid token",
+  });
+}
 };
