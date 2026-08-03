@@ -27,9 +27,8 @@ try {
   throw new Error("AI returned invalid JSON");
 }
     } catch (error) {
-      console.log(
-        "Gemini failed. Switching to Groq..."
-      );
+  console.error("Gemini Error:", error);
+  console.log("Gemini failed. Switching to Groq...");
 
       const { text } =
         await generateText({

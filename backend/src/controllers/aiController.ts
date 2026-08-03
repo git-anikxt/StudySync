@@ -6,6 +6,8 @@ import {
   generateQuiz,
 } from "../services/ai";
 
+import { chatWithAI } from "../services/ai/chat";
+
 export const summarizeNotes = async (
   req: Request,
   res: Response
@@ -75,6 +77,30 @@ export const quiz = async (
       success: false,
       message:
         "Quiz generation failed",
+    });
+  }
+};
+
+export const chat = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { messages } = req.body;
+
+    const result =
+      await chatWithAI(messages);
+
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Chat failed",
     });
   }
 };

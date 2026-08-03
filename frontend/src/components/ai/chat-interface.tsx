@@ -9,7 +9,9 @@ import {
   type SummaryData,
   type QuizQuestion,
 } from './result-cards'
-import { generateSummary, generateFlashcards, } from '@/src/services/ai'
+import { generateSummary, generateFlashcards,
+  generateQuiz
+ } from '@/src/services/ai'
 
 type Message = {
   id: string
@@ -25,6 +27,7 @@ const greeting: Message = {
   role: 'assistant',
   text: 'Hi Aniket! Upload your notes or pick a quick action and I\u2019ll generate summaries, flashcards, or a quiz from them. You can also just ask me anything.',
 }
+
 
 const starters = [
   { icon: FileText, label: 'Summarize my notes' },
@@ -69,11 +72,11 @@ export function ChatInterface({
   setThinking(true)
 
   try {
-  let aiMsg: Message
+let aiMsg: Message
 
-if (
-  trimmed.toLowerCase().includes('flashcard')
-) {
+const lower = trimmed.toLowerCase()
+
+if (lower.includes('flashcard')) {
   const cards = JSON.parse(
     await generateFlashcards(trimmed),
   ) as Flashcard[]
@@ -85,6 +88,20 @@ if (
     flashcards: {
       title: 'AI Flashcards',
       cards,
+    },
+  }
+} else if (lower.includes('quiz')) {
+  const questions = JSON.parse(
+    await generateQuiz(trimmed),
+  ) as QuizQuestion[]
+
+  aiMsg = {
+    id: `${Date.now()}-a`,
+    role: 'assistant',
+    text: 'Here is your quiz.',
+    quiz: {
+      title: 'AI Quiz',
+      questions,
     },
   }
 } else {
@@ -100,8 +117,8 @@ if (
   }
 }
 
-    setMessages((prev) => [...prev, aiMsg])
-  } catch (err) {
+setMessages((prev) => [...prev, aiMsg])
+} catch (err) {
     setMessages((prev) => [
       ...prev,
       {

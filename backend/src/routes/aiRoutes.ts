@@ -4,6 +4,7 @@ import {
   summarizeNotes,
   flashcards,
   quiz,
+  chat,
 } from "../controllers/aiController";
 import { protect } from "../middleware/authMiddleware";
 
@@ -25,6 +26,12 @@ router.post(
   "/quiz",
   protect,
   quiz
+);
+
+router.post(
+  "/chat",
+  protect,
+  chat
 );
 
 export default router;
