@@ -1,6 +1,37 @@
 import Session from "../models/Session";
 import User from "../models/User";
 import { awardBadge } from "../utils/badgeUtils";
+export const getMySessions = async (
+  req: any,
+  res: any
+) => {
+  try {
+    const sessions =
+      await Session.find({
+        userId: req.user.id,
+      })
+        .populate(
+          "roomId",
+          "name subject"
+        )
+        .sort({
+          startTime: -1,
+        })
+        .limit(50);
+
+    res.json({
+      success: true,
+      sessions,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+    });
+  }
+};
+
 export const startSession = async (
   req: any,
   res: any
