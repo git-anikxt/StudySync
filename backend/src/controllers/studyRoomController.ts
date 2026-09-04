@@ -73,11 +73,14 @@ export const joinRoom = async (
       });
     }
 
-    if (
-      room.participants.includes(
-        req.user.id
-      )
-    ) {
+    const alreadyJoined =
+      room.participants.some(
+        (participantId: any) =>
+          participantId.toString() ===
+          req.user.id
+      );
+
+    if (alreadyJoined) {
       return res.status(400).json({
         success: false,
         message:
