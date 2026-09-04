@@ -24,7 +24,7 @@ const fallbackStats: Pick<DashboardStats, 'level' | 'badges'> = {
 const nav = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   { label: 'Study Rooms', icon: BookOpen, href: '/dashboard/study-rooms' },
-  { label: 'Partners', icon: Users, href: '#' },
+  { label: 'Partners', icon: Users, href: '/dashboard/matches' },
   { label: 'Sessions', icon: Calendar, href: '#' },
   { label: 'Leaderboard', icon: Trophy, href: '/dashboard/leaderboard' },
   { label: 'AI Tools', icon: Sparkles, href: '/dashboard/ai' },
