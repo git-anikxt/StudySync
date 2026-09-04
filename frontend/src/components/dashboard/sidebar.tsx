@@ -25,7 +25,7 @@ const nav = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   { label: 'Study Rooms', icon: BookOpen, href: '/dashboard/study-rooms' },
   { label: 'Partners', icon: Users, href: '/dashboard/matches' },
-  { label: 'Sessions', icon: Calendar, href: '#' },
+  { label: 'Sessions', icon: Calendar, href: '/dashboard/sessions' },
   { label: 'Leaderboard', icon: Trophy, href: '/dashboard/leaderboard' },
   { label: 'AI Tools', icon: Sparkles, href: '/dashboard/ai' },
 ]

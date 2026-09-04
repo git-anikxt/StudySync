@@ -1,50 +1,26 @@
 import { api } from '@/src/lib/api'
 
+export interface SessionRoom {
+  _id: string
+  name: string
+  subject: string
+}
+
 export interface StudySession {
-  id: string
-  startedAt?: string
-  endedAt?: string
-  duration?: number
-  status?: string
+  _id: string
+  startTime: string
+  endTime?: string
+  duration: number
+  roomId?: SessionRoom | null
 }
 
-interface SessionResponse {
+interface SessionsResponse {
   success?: boolean
-  session?: StudySession
-  data?: StudySession
+  sessions?: StudySession[]
 }
 
-function normalizeSession(rawSession: StudySession & { _id?: string }) {
-  return {
-    ...rawSession,
-    id: rawSession.id ?? rawSession._id ?? '',
-  }
-}
+export async function getMySessions() {
+  const { data } = await api.get<SessionsResponse>('/sessions')
 
-function unwrapSession(data: SessionResponse | StudySession) {
-  if ('session' in data && data.session) {
-    return data.session
-  }
-
-  if ('data' in data && data.data) {
-    return data.data
-  }
-
-  return data as StudySession
-}
-
-export async function startSession() {
-  const { data } = await api.post<SessionResponse | StudySession>(
-    '/sessions/start',
-  )
-
-  return normalizeSession(unwrapSession(data))
-}
-
-export async function endSession(id: string) {
-  const { data } = await api.post<SessionResponse | StudySession>(
-    `/sessions/${id}/end`,
-  )
-
-  return normalizeSession(unwrapSession(data))
+  return data.sessions ?? []
 }
