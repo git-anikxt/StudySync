@@ -21,6 +21,7 @@ export const getLeaderboard = async (
           user.streak * 5;
 
         return {
+          userId: user._id,
           name: user.name,
           xp: user.xp,
           reputation:
