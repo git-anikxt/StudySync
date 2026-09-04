@@ -1,6 +1,7 @@
 'use client'
 
 import { Crown, Medal, Flame } from 'lucide-react'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 import {
@@ -8,7 +9,7 @@ import {
   type LeaderboardEntry,
 } from '@/src/services/leaderboard'
 
-function rankBadge(rank: number) {
+export function rankBadge(rank: number) {
   if (rank === 1) return <Crown className="size-4 text-chart-3" aria-label="1st place" />
   if (rank === 2) return <Medal className="size-4 text-muted-foreground" aria-label="2nd place" />
   if (rank === 3) return <Medal className="size-4 text-chart-4" aria-label="3rd place" />
@@ -59,9 +60,11 @@ export function LeaderboardSection() {
     <div className="rounded-3xl border border-border bg-card p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">
-            Leaderboard · Top 5
-          </h2>
+          <Link href="/dashboard/leaderboard">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
+              Leaderboard · Top 5
+            </h2>
+          </Link>
           <p className="mt-0.5 text-sm text-muted-foreground">
             This week · Biology 201
           </p>
@@ -84,7 +87,7 @@ export function LeaderboardSection() {
           </div>
         )}
 
-        {leaders.map((l) => (
+        {leaders.slice(0, 5).map((l) => (
           <div
             key={l.rank}
             className={`flex items-center gap-3 rounded-2xl border p-3 ${

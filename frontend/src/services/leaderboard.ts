@@ -2,6 +2,7 @@ import { api } from '@/src/lib/api'
 
 export interface LeaderboardEntry {
   rank: number
+  userId?: string
   name: string
   xp: number
   reputation: number
