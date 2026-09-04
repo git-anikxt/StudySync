@@ -1,7 +1,12 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { UploadCloud, FileText, MoreVertical, CheckCircle2 } from 'lucide-react'
+import {
+  UploadCloud,
+  FileText,
+  MoreVertical,
+  CheckCircle2,
+} from 'lucide-react'
 
 type UploadedFile = {
   id: string
@@ -10,35 +15,51 @@ type UploadedFile = {
   status: 'ready' | 'processing'
 }
 
-const initialFiles: UploadedFile[] = [
-  { id: '1', name: 'Organic Chemistry Ch.4.pdf', size: '2.4 MB', status: 'ready' },
-  { id: '2', name: 'Calculus II - Integrals.pdf', size: '1.8 MB', status: 'ready' },
-  { id: '3', name: 'World History Notes.pdf', size: '3.1 MB', status: 'processing' },
-]
+type UploadPanelProps = {
+  onNotesLoaded: (notes: string) => void
+}
 
-export function UploadPanel() {
+const initialFiles: UploadedFile[] = []
+
+export function UploadPanel({
+  onNotesLoaded,
+}: UploadPanelProps) {
   const [files, setFiles] = useState<UploadedFile[]>(initialFiles)
   const [dragging, setDragging] = useState(false)
 
-  const addFiles = useCallback((list: FileList | null) => {
-    if (!list) return
-    const next = Array.from(list).map((f, i) => ({
-      id: `${Date.now()}-${i}`,
-      name: f.name,
-      size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
-      status: 'ready' as const,
-    }))
-    setFiles((prev) => [...next, ...prev])
-  }, [])
+  const addFiles = useCallback(
+    async (list: FileList | null) => {
+      if (!list) return
+
+      const file = list[0]
+
+      // Presentation ke liye TXT file support
+      if (file.type === 'text/plain') {
+        const text = await file.text()
+        onNotesLoaded(text)
+      }
+
+      const next = Array.from(list).map((f, i) => ({
+        id: `${Date.now()}-${i}`,
+        name: f.name,
+        size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
+        status: 'ready' as const,
+      }))
+
+      setFiles((prev) => [...next, ...prev])
+    },
+    [onNotesLoaded],
+  )
 
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-3xl border border-border bg-card p-5">
-        <h2 className="text-sm font-semibold tracking-tight text-foreground">
+        <h2 className="text-sm font-semibold tracking-tight">
           Upload notes
         </h2>
+
         <p className="mt-0.5 text-xs text-muted-foreground">
-          PDF files up to 20 MB
+          Upload TXT or PDF
         </p>
 
         <label
@@ -52,24 +73,27 @@ export function UploadPanel() {
             setDragging(false)
             addFiles(e.dataTransfer.files)
           }}
-          className={`mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors ${
+          className={`mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-8 ${
             dragging
               ? 'border-primary bg-accent'
               : 'border-border bg-background hover:border-primary/40'
           }`}
         >
-          <span className="flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+          <span className="flex size-11 items-center justify-center rounded-xl bg-accent">
             <UploadCloud className="size-5" />
           </span>
-          <span className="text-sm font-medium text-foreground">
-            Drag &amp; drop your PDF
+
+          <span className="text-sm font-medium">
+            Drag & drop your file
           </span>
+
           <span className="text-xs text-muted-foreground">
-            or <span className="font-semibold text-primary">browse files</span>
+            or <span className="text-primary font-semibold">browse files</span>
           </span>
+
           <input
             type="file"
-            accept="application/pdf"
+            accept=".txt,.pdf"
             multiple
             className="sr-only"
             onChange={(e) => addFiles(e.target.files)}
@@ -79,10 +103,11 @@ export function UploadPanel() {
 
       <div className="rounded-3xl border border-border bg-card p-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">
+          <h2 className="text-sm font-semibold">
             Uploaded files
           </h2>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
             {files.length}
           </span>
         </div>
@@ -93,28 +118,32 @@ export function UploadPanel() {
               key={file.id}
               className="flex items-center gap-3 rounded-2xl border border-border bg-background p-3"
             >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+              <span className="flex size-9 items-center justify-center rounded-xl bg-accent">
                 <FileText className="size-4" />
               </span>
+
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">
+                <p className="truncate text-sm font-medium">
                   {file.name}
                 </p>
+
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   {file.size}
+
                   {file.status === 'ready' ? (
                     <span className="inline-flex items-center gap-1 text-primary">
-                      <CheckCircle2 className="size-3" /> Ready
+                      <CheckCircle2 className="size-3" />
+                      Ready
                     </span>
                   ) : (
-                    <span className="text-amber-600">Processing…</span>
+                    <span>Processing...</span>
                   )}
                 </p>
               </div>
+
               <button
                 type="button"
-                aria-label="File options"
-                className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="flex size-7 items-center justify-center rounded-lg hover:bg-muted"
               >
                 <MoreVertical className="size-4" />
               </button>

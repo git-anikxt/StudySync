@@ -41,3 +41,9 @@ export async function generateQuiz(notes: string) {
 
   return data.quiz
 }
+
+export async function sendChat(messages: { role: 'user' | 'assistant'; content: string }[]) {
+  const { data } = await api.post('/ai/chat', { messages })
+
+  return data // { success, type: 'chat'|'summary'|'flashcards'|'quiz', data }
+}

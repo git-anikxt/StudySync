@@ -1,6 +1,7 @@
 'use client'
 
 import { Radio, Users, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 import {  useEffect, useState } from 'react'
 
 import {
@@ -43,9 +44,11 @@ export function ActiveStudyRooms() {
   return (
     <div className="rounded-3xl border border-border bg-card p-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">
-          Active study rooms
-        </h2>
+        <Link href="/dashboard/study-rooms">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">
+            Active study rooms
+          </h2>
+        </Link>
         <span className="flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
           <span className="relative flex size-2">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
@@ -75,8 +78,9 @@ export function ActiveStudyRooms() {
         )}
 
         {rooms.map((room) => (
-  <div
+  <Link
     key={room.id}
+    href={`/dashboard/study-rooms/${room.id}`}
     className="group flex items-center gap-3 rounded-2xl border border-border bg-background p-3 text-left transition-colors hover:border-primary/40"
   >
     <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
@@ -95,7 +99,7 @@ export function ActiveStudyRooms() {
     </div>
 
     <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-  </div>
+  </Link>
 ))}
       </div>
     </div>

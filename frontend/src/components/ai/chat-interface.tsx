@@ -9,9 +9,7 @@ import {
   type SummaryData,
   type QuizQuestion,
 } from './result-cards'
-import { generateSummary, generateFlashcards,
-  generateQuiz
- } from '@/src/services/ai'
+import { sendChat } from '@/src/services/ai'
 
 type Message = {
   id: string
@@ -44,9 +42,11 @@ const actionPrompts: Record<string, string> = {
 }
 
 export function ChatInterface({
+  uploadedNotes,
   pendingAction,
   onActionHandled,
 }: {
+  uploadedNotes: string
   pendingAction: string | null
   onActionHandled: () => void
 }) {
@@ -72,53 +72,36 @@ export function ChatInterface({
   setThinking(true)
 
   try {
-let aiMsg: Message
+    const history = [...messages, userMsg].map(({ role, text }) => ({
+      role,
+      content: text ?? '',
+    }))
 
-const lower = trimmed.toLowerCase()
+    const res = await sendChat(history)
 
-if (lower.includes('flashcard')) {
-  const cards = JSON.parse(
-    await generateFlashcards(trimmed),
-  ) as Flashcard[]
+    const aiMsg: Message = {
+      id: `${Date.now()}-a`,
+      role: 'assistant',
+    }
 
-  aiMsg = {
-    id: `${Date.now()}-a`,
-    role: 'assistant',
-    text: 'Here are your flashcards.',
-    flashcards: {
-      title: 'AI Flashcards',
-      cards,
-    },
-  }
-} else if (lower.includes('quiz')) {
-  const questions = JSON.parse(
-    await generateQuiz(trimmed),
-  ) as QuizQuestion[]
+    if (res.type === 'summary') {
+      aiMsg.summary = res.data as SummaryData
+    } else if (res.type === 'flashcards') {
+      aiMsg.flashcards = {
+        title: 'AI Flashcards',
+        cards: res.data as Flashcard[],
+      }
+    } else if (res.type === 'quiz') {
+      aiMsg.quiz = {
+        title: 'AI Quiz',
+        questions: res.data as QuizQuestion[],
+      }
+    } else {
+      aiMsg.text = res.data as string
+    }
 
-  aiMsg = {
-    id: `${Date.now()}-a`,
-    role: 'assistant',
-    text: 'Here is your quiz.',
-    quiz: {
-      title: 'AI Quiz',
-      questions,
-    },
-  }
-} else {
-  const summary = JSON.parse(
-    await generateSummary(trimmed),
-  ) as SummaryData
-
-  aiMsg = {
-    id: `${Date.now()}-a`,
-    role: 'assistant',
-    text: 'Here is your summary.',
-    summary,
-  }
-}
-
-setMessages((prev) => [...prev, aiMsg])
-} catch (err) {
+    setMessages((prev) => [...prev, aiMsg])
+  } catch (err) {
     setMessages((prev) => [
       ...prev,
       {

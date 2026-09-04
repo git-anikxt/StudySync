@@ -62,3 +62,52 @@ export async function createStudyRoom(payload: CreateStudyRoomPayload) {
         : (data as StudyRoom),
   )
 }
+
+export interface RoomParticipant {
+  _id: string
+  name: string
+  xp?: number
+  reputation?: number
+}
+
+export interface StudyRoomWithParticipants extends StudyRoom {
+  participants?: RoomParticipant[]
+}
+
+interface JoinLeaveResponse {
+  success?: boolean
+  message?: string
+}
+
+interface RoomParticipantsResponse {
+  success?: boolean
+  room?: StudyRoomWithParticipants
+}
+
+export async function joinStudyRoom(id: string) {
+  const { data } = await api.post<JoinLeaveResponse>(
+    `/study-rooms/${id}/join`,
+  )
+
+  return data
+}
+
+export async function leaveStudyRoom(id: string) {
+  const { data } = await api.post<JoinLeaveResponse>(
+    `/study-rooms/${id}/leave`,
+  )
+
+  return data
+}
+
+export async function getRoomParticipants(id: string) {
+  const { data } = await api.get<RoomParticipantsResponse>(
+    `/study-rooms/${id}/participants`,
+  )
+
+  if (!data.room) {
+    return undefined
+  }
+
+  return normalizeStudyRoom(data.room) as StudyRoomWithParticipants
+}
