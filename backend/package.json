@@ -15,6 +15,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.82",
     "@ai-sdk/groq": "^3.0.41",
+    "@clerk/express": "^2.1.66",
     "@google/genai": "^2.8.0",
     "ai": "^6.0.206",
     "bcryptjs": "^3.0.3",

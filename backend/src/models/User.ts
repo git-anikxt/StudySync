@@ -7,15 +7,16 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    email: {
+    clerkId: {
       type: String,
       required: true,
       unique: true,
     },
 
-    password: {
+    email: {
       type: String,
       required: true,
+      unique: true,
     },
 
     xp: {

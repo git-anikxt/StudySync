@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { clerkMiddleware } from "@clerk/express";
 import authRoutes from "./routes/authRoutes";
 import aiRoutes from "./routes/aiRoutes";
 import { connectDB } from "./config/db";
@@ -21,6 +22,11 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Clerk auth — verifies the session JWT (Bearer token from the
+// frontend) on every request; route guards read getAuth(req).
+app.use(clerkMiddleware());
+
 app.use("/api/auth", authRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/goals", goalRoutes);

@@ -1,48 +1,70 @@
 import { Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import { clerkClient, getAuth } from "@clerk/express";
 
-export const protect = (
+import User from "../models/User";
+
+export const protect = async (
   req: any,
   res: Response,
   next: NextFunction
 ) => {
-  let token;
+  try {
+    const auth = getAuth(req);
+    const clerkUserId = auth.userId;
 
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    token =
-      req.headers.authorization.split(" ")[1];
-  }
+    if (!clerkUserId) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
 
-  if (!token) {
+    let user = await User.findOne({
+      clerkId: clerkUserId,
+    });
+
+    if (!user) {
+      // First time this Clerk user hits the API — provision a
+      // StudySync user so every controller can rely on req.user.id.
+      const clerkUser = await clerkClient.users.getUser(clerkUserId);
+
+      const email =
+        clerkUser.primaryEmailAddress?.emailAddress ??
+        clerkUser.emailAddresses[0]?.emailAddress ??
+        "";
+
+      const fullName = [clerkUser.firstName, clerkUser.lastName]
+        .filter(Boolean)
+        .join(" ");
+
+      const name = fullName || email.split("@")[0] || clerkUserId;
+
+      user = await User.findOneAndUpdate(
+        { clerkId: clerkUserId },
+        {
+          $setOnInsert: {
+            name,
+            email,
+          },
+        },
+        {
+          upsert: true,
+          new: true,
+        }
+      );
+    }
+
+    req.user = {
+      id: user!._id.toString(),
+    };
+
+    next();
+  } catch (error) {
+    console.error(error);
+
     return res.status(401).json({
       success: false,
       message: "Not authorized",
     });
   }
-
-  try {
-  console.log("JWT_SECRET =", process.env.JWT_SECRET)
-
-  const decoded = jwt.verify(
-    token,
-    process.env.JWT_SECRET as string
-  )
-
-  console.log("Decoded =", decoded)
-
-  req.user = decoded
-
-  next()
-} catch (error) {
-  console.log("===== JWT ERROR =====");
-  console.log(error);
-
-  return res.status(401).json({
-    success: false,
-    message: "Invalid token",
-  });
-}
 };
