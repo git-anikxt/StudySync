@@ -1,17 +1,23 @@
 'use client'
 
+import { useSignIn } from '@clerk/nextjs'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, type FormEvent, useState } from 'react'
 
 import { Button } from '@/src/components/ui/button'
-import { useAuth } from '@/src/hooks/useAuth'
-import { login } from '@/src/services/auth'
+
+function clerkErrorMessage(err: unknown, fallback: string): string {
+  const errors = (err as { errors?: Array<{ message?: string }> } | null)
+    ?.errors
+
+  return errors?.[0]?.message ?? fallback
+}
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { setToken } = useAuth()
+  const { signIn, setActive } = useSignIn()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -23,12 +29,24 @@ function LoginForm() {
     setIsSubmitting(true)
 
     try {
-      const response = await login({ email, password })
-      setToken(response.token)
+      if (!signIn) {
+        throw new Error('Sign in is not ready yet.')
+      }
 
-      router.replace(searchParams.get('next') ?? '/dashboard')
+      const result = await signIn.create({
+        identifier: email,
+        password,
+      })
+
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId })
+
+        router.replace(searchParams.get('next') ?? '/dashboard')
+      } else {
+        setError('Unable to log in.')
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to log in.')
+      setError(clerkErrorMessage(err, 'Unable to log in.'))
     } finally {
       setIsSubmitting(false)
     }

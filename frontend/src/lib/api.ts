@@ -1,5 +1,13 @@
 import axios from 'axios'
 
+interface ClerkWindow {
+  Clerk?: {
+    session?: {
+      getToken: () => Promise<string | null>
+    }
+  }
+}
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000/api'
 
@@ -10,25 +18,16 @@ export const api = axios.create({
   },
 })
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   if (typeof window === 'undefined') {
     return config
   }
 
-  const token = localStorage.getItem('studysync-token')
-
-  console.log('JWT Token:', token)
+  const token = await (window as Window & ClerkWindow).Clerk?.session?.getToken()
 
   if (token) {
     config.headers = config.headers ?? {}
     config.headers.Authorization = `Bearer ${token}`
-
-    console.log(
-      'Authorization Header:',
-      config.headers.Authorization,
-    )
-  } else {
-    console.log('No token found in localStorage')
   }
 
   return config
