@@ -6,13 +6,17 @@ import {
   FileText,
   MoreVertical,
   CheckCircle2,
+  XCircle,
 } from 'lucide-react'
+
+import { extractNotes } from '@/src/services/ai'
 
 type UploadedFile = {
   id: string
   name: string
   size: string
-  status: 'ready' | 'processing'
+  status: 'ready' | 'processing' | 'failed'
+  error?: string
 }
 
 type UploadPanelProps = {
@@ -29,24 +33,59 @@ export function UploadPanel({
 
   const addFiles = useCallback(
     async (list: FileList | null) => {
-      if (!list) return
+      if (!list || list.length === 0) return
 
-      const file = list[0]
+      const extracted: { name: string; text: string }[] = []
 
-      // Presentation ke liye TXT file support
-      if (file.type === 'text/plain') {
-        const text = await file.text()
-        onNotesLoaded(text)
+      await Promise.all(
+        Array.from(list).map(async (f, i) => {
+          const id = `${Date.now()}-${i}`
+
+          setFiles((prev) => [
+            {
+              id,
+              name: f.name,
+              size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
+              status: 'processing' as const,
+            },
+            ...prev,
+          ])
+
+          try {
+            const { text } = await extractNotes(f)
+
+            extracted.push({ name: f.name, text })
+
+            setFiles((prev) =>
+              prev.map((file) =>
+                file.id === id
+                  ? { ...file, status: 'ready' as const }
+                  : file,
+              ),
+            )
+          } catch (err: any) {
+            const message =
+              err?.response?.data?.message ??
+              `Couldn't extract text from ${f.name}`
+
+            setFiles((prev) =>
+              prev.map((file) =>
+                file.id === id
+                  ? { ...file, status: 'failed' as const, error: message }
+                  : file,
+              ),
+            )
+          }
+        }),
+      )
+
+      if (extracted.length > 0) {
+        onNotesLoaded(
+          extracted
+            .map((f) => `--- ${f.name} ---\n${f.text}`)
+            .join('\n\n'),
+        )
       }
-
-      const next = Array.from(list).map((f, i) => ({
-        id: `${Date.now()}-${i}`,
-        name: f.name,
-        size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
-        status: 'ready' as const,
-      }))
-
-      setFiles((prev) => [...next, ...prev])
     },
     [onNotesLoaded],
   )
@@ -135,10 +174,24 @@ export function UploadPanel({
                       <CheckCircle2 className="size-3" />
                       Ready
                     </span>
+                  ) : file.status === 'failed' ? (
+                    <span
+                      className="inline-flex items-center gap-1 text-destructive"
+                      title={file.error}
+                    >
+                      <XCircle className="size-3" />
+                      Failed
+                    </span>
                   ) : (
                     <span>Processing...</span>
                   )}
                 </p>
+
+                {file.status === 'failed' && file.error && (
+                  <p className="mt-0.5 truncate text-xs text-destructive">
+                    {file.error}
+                  </p>
+                )}
               </div>
 
               <button

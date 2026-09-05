@@ -55,6 +55,12 @@ export function ChatInterface({
   const [thinking, setThinking] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Files are joined as "--- name ---\ntext" blocks by the upload panel,
+  // so counting those separators gives the number of loaded note sources.
+  const noteCount = uploadedNotes
+    ? uploadedNotes.split('\n\n--- ').length
+    : 0
+
   const send = async (text: string) => {
   const trimmed = text.trim()
 
@@ -77,7 +83,19 @@ export function ChatInterface({
       content: text ?? '',
     }))
 
-    const res = await sendChat(history)
+    // Uploaded notes are resent as context on every request (the API is
+    // stateless per call) but are never added to the visible messages.
+    const withNotes = uploadedNotes
+      ? [
+          {
+            role: 'user' as const,
+            content: `Here are my uploaded notes for context:\n\n${uploadedNotes}`,
+          },
+          ...history,
+        ]
+      : history
+
+    const res = await sendChat(withNotes)
 
     const aiMsg: Message = {
       id: `${Date.now()}-a`,
@@ -140,7 +158,7 @@ export function ChatInterface({
           </h2>
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="size-1.5 rounded-full bg-primary" />
-            Ready · 3 notes loaded
+            Ready · {noteCount} {noteCount === 1 ? 'note' : 'notes'} loaded
           </p>
         </div>
       </div>

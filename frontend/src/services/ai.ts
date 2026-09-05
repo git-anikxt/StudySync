@@ -47,3 +47,24 @@ export async function sendChat(messages: { role: 'user' | 'assistant'; content: 
 
   return data // { success, type: 'chat'|'summary'|'flashcards'|'quiz', data }
 }
+
+interface ExtractNotesResponse {
+  success: boolean
+  filename: string
+  text: string
+}
+
+export async function extractNotes(file: File) {
+  const formData = new FormData()
+
+  formData.append('file', file)
+
+  // No explicit Content-Type: axios clears the default for FormData so
+  // the browser generates the multipart boundary automatically.
+  const { data } = await api.post<ExtractNotesResponse>(
+    '/notes/extract',
+    formData,
+  )
+
+  return { filename: data.filename, text: data.text }
+}
