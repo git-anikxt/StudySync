@@ -59,11 +59,15 @@ export async function extractNotes(file: File) {
 
   formData.append('file', file)
 
-  // No explicit Content-Type: axios clears the default for FormData so
-  // the browser generates the multipart boundary automatically.
+  // Per-request Content-Type override: the shared api instance sets a
+  // default 'application/json' explicitly, so axios must be told this
+  // request is multipart or it will JSON-stringify the FormData.
   const { data } = await api.post<ExtractNotesResponse>(
     '/notes/extract',
     formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    },
   )
 
   return { filename: data.filename, text: data.text }
