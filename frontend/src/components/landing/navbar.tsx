@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Menu, X } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/src/components/ui/button'
 import { Logo } from './logo'
 
@@ -33,10 +34,10 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-2 md:flex">
-          <Button variant="ghost" className="text-sm font-medium">
+          <Button variant="ghost" className="text-sm font-medium" render={<Link href="/login" />}>
             Log in
           </Button>
-          <Button className="rounded-xl text-sm font-semibold shadow-sm">
+          <Button className="rounded-xl text-sm font-semibold shadow-sm" render={<Link href="/register" />}>
             Start free
           </Button>
         </div>
@@ -64,10 +65,12 @@ export function Navbar() {
               </a>
             ))}
             <div className="mt-2 flex flex-col gap-2">
-              <Button variant="ghost" className="justify-start">
+              <Button variant="ghost" className="justify-start" render={<Link href="/login" />}>
                 Log in
               </Button>
-              <Button className="rounded-xl font-semibold">Start free</Button>
+              <Button className="rounded-xl font-semibold" render={<Link href="/register" />}>
+                Start free
+              </Button>
             </div>
           </div>
         )}

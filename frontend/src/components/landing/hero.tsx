@@ -1,5 +1,6 @@
 import { ArrowRight, Sparkles, Star } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Button } from '@/src/components/ui/button'
 
 const avatars = [
@@ -51,6 +52,7 @@ export function Hero() {
           <Button
             size="lg"
             className="group h-12 rounded-xl px-6 text-base font-semibold shadow-sm"
+            render={<Link href="/register" />}
           >
             Start studying free
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
