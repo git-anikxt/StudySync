@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { useClerk } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import { Logo } from '@/src/components/landing/logo'
 import {
   LayoutDashboard,
@@ -12,6 +14,7 @@ import {
   Settings,
   Menu,
   X,
+  LogOut,
 } from 'lucide-react'
 
 import { type DashboardStats } from '@/src/services/dashboard'
@@ -38,6 +41,8 @@ export function Sidebar({
   stats?: Pick<DashboardStats, 'level' | 'badges'>
 }) {
   const [open, setOpen] = useState(false)
+  const { signOut } = useClerk()
+  const router = useRouter()
   const sidebarStats = stats ?? fallbackStats
 
   return (
@@ -94,6 +99,18 @@ export function Sidebar({
             <Settings className="size-5" />
             Settings
           </a>
+          <button
+            type="button"
+            onClick={() => {
+              signOut().then(() => {
+                router.push('/')
+              })
+            }}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <LogOut className="size-5" />
+            Sign out
+          </button>
           <div className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
             <img
               src="/avatars/avatar-2.png"
