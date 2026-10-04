@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { clerkMiddleware } from "@clerk/express";
+import { clerkMiddleware, verifyToken } from "@clerk/express";
 import authRoutes from "./routes/authRoutes";
 import aiRoutes from "./routes/aiRoutes";
 import { connectDB } from "./config/db";
@@ -27,6 +27,36 @@ app.use(express.json());
 // Clerk auth — verifies the session JWT (Bearer token from the
 // frontend) on every request; route guards read getAuth(req).
 app.use(clerkMiddleware());
+
+// ⚠️ TEMPORARY DIAGNOSTIC — REMOVE once the 401 investigation is resolved.
+// Unprotected by design: must run even when the normal auth flow fails.
+app.get("/api/debug/verify-token", async (req, res) => {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : header;
+
+  if (!token) {
+    return res.json({
+      success: false,
+      debug: "No token provided. Send header: Authorization: Bearer <token>",
+    });
+  }
+
+  try {
+    const payload = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY,
+    });
+    return res.json({ success: true, payload });
+  } catch (error: any) {
+    return res.json({
+      success: false,
+      errorName: error?.constructor?.name ?? null,
+      message: error?.message ?? null,
+      reason: error?.reason ?? null,
+      longMessage: error?.longMessage ?? null,
+      data: error?.data ?? null,
+    });
+  }
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/ai", aiRoutes);
