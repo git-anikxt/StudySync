@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, LogOut, Radio, Send } from 'lucide-react'
@@ -30,6 +31,7 @@ function isAlreadyJoined(err: unknown) {
 export default function StudyRoomDetailPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
+  const { getToken, isLoaded, isSignedIn } = useAuth()
   const roomId = params?.id ?? ''
 
   const [room, setRoom] = useState<StudyRoomWithParticipants | null>(null)
@@ -102,33 +104,60 @@ export default function StudyRoomDetailPage() {
   // messages, and tear everything down on unmount. The listener is removed in
   // cleanup, so React Strict Mode's double-invoke never double-subscribes.
   useEffect(() => {
-    if (!roomId) return
-
-    socket.connect()
+    if (!roomId || !isLoaded || !isSignedIn) return
 
     const joinRoom = () => socket.emit('join-room', roomId)
-
-    if (socket.connected) {
-      joinRoom()
+    const handleConnectError = (err: Error) => {
+      console.error('Study room chat connection failed:', err)
+      setError('Unable to connect to room chat. Please refresh and try again.')
     }
 
     socket.on('connect', joinRoom)
+    socket.on('connect_error', handleConnectError)
 
     const handleReceive = (msg: ChatMessage) => {
       setMessages((prev) =>
         prev.some((m) => m._id === msg._id) ? prev : [...prev, msg],
       )
     }
+    const handleMessageError = (response: { message?: string }) => {
+      setError(response.message ?? 'Unable to send your message.')
+    }
 
     socket.on('receive-message', handleReceive)
+    socket.on('message-error', handleMessageError)
+
+    let cancelled = false
+    async function connect() {
+      try {
+        const token = await getToken()
+
+        if (cancelled) return
+        if (!token) {
+          setError('Unable to authenticate room chat. Please sign in again.')
+          return
+        }
+
+        socket.auth = { token }
+        socket.connect()
+      } catch (err) {
+        console.error('Unable to authenticate room chat:', err)
+        setError('Unable to authenticate room chat. Please sign in again.')
+      }
+    }
+
+    void connect()
 
     return () => {
+      cancelled = true
       socket.off('connect', joinRoom)
+      socket.off('connect_error', handleConnectError)
       socket.off('receive-message', handleReceive)
+      socket.off('message-error', handleMessageError)
       socket.emit('leave-room', roomId)
       socket.disconnect()
     }
-  }, [roomId])
+  }, [getToken, isLoaded, isSignedIn, roomId])
 
   // Auto-scroll to the newest message.
   useEffect(() => {
@@ -144,13 +173,15 @@ export default function StudyRoomDetailPage() {
     const text = input.trim()
 
     if (!text || !me) return
+    if (!socket.connected) {
+      setError('Room chat is not connected. Please refresh and try again.')
+      return
+    }
 
     // The backend persists the message and broadcasts it back via
     // 'receive-message', which is what appends it to the UI.
     socket.emit('send-message', {
       roomId,
-      senderId: me._id,
-      senderName: me.name,
       message: text,
     })
 

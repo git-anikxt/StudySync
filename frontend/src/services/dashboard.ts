@@ -1,6 +1,7 @@
 import { api } from '@/src/lib/api'
 
 export interface DashboardStats {
+  name: string
   xp: number
   level: number
   reputation: number

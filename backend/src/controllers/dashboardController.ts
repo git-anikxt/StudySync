@@ -1,16 +1,14 @@
 import Goal from "../models/Goal";
-import User from "../models/User";
 import Session from "../models/Session";
 import AccountabilityContract from "../models/AccountabilityContract";
+import { getClerkUserProfile } from "../services/clerkProfile";
 
 export const getDashboard = async (
   req: any,
   res: any
 ) => {
   try {
-    const user = await User.findById(
-      req.user.id
-    );
+    const user = await getClerkUserProfile(req.user.id);
 
     const goals = await Goal.find({
       userId: req.user.id,
@@ -68,10 +66,11 @@ export const getDashboard = async (
       success: true,
 
       stats: {
-        xp: user?.xp,
-        level: user?.level,
-        reputation: user?.reputation,
-        streak: user?.streak,
+        name: user.name,
+        xp: user.xp,
+        level: user.level,
+        reputation: user.reputation,
+        streak: user.streak,
 
         totalGoals:
           goals.length,
@@ -80,9 +79,9 @@ export const getDashboard = async (
 
         activeGoals,
         studyHours: totalHours,
-        badges: user?.badges,
+        badges: user.badges,
         accountabilityScore:
-          user?.accountabilityScore,
+          user.accountabilityScore,
         activeContracts,
         completedContracts,
         missedContracts,
@@ -96,4 +95,3 @@ export const getDashboard = async (
     });
   }
 };
-

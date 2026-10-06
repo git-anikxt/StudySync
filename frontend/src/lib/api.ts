@@ -2,6 +2,8 @@ import axios from 'axios'
 
 interface ClerkWindow {
   Clerk?: {
+    loaded?: boolean
+    load: () => Promise<void>
     session?: {
       getToken: () => Promise<string | null>
     }
@@ -23,7 +25,14 @@ api.interceptors.request.use(async (config) => {
     return config
   }
 
-  const token = await (window as Window & ClerkWindow).Clerk?.session?.getToken()
+  // Wait for Clerk to finish loading before reading a token, otherwise
+  // mount-time requests fire unauthenticated and 401 (Clerk.load() is
+  // idempotent — resolves immediately if already loaded).
+  const clerk = (window as Window & ClerkWindow).Clerk
+  if (clerk && !clerk.loaded) {
+    await clerk.load()
+  }
+  const token = await clerk?.session?.getToken()
 
   if (token) {
     config.headers = config.headers ?? {}

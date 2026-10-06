@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useClerk } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { Logo } from '@/src/components/landing/logo'
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 
 import { type DashboardStats } from '@/src/services/dashboard'
+import { getMyProfile } from '@/src/services/users'
 
 const fallbackStats: Pick<DashboardStats, 'level' | 'badges'> = {
   level: 24,
@@ -41,9 +42,28 @@ export function Sidebar({
   stats?: Pick<DashboardStats, 'level' | 'badges'>
 }) {
   const [open, setOpen] = useState(false)
+  const [userName, setUserName] = useState('Loading…')
   const { signOut } = useClerk()
   const router = useRouter()
   const sidebarStats = stats ?? fallbackStats
+
+  useEffect(() => {
+    let isMounted = true
+
+    getMyProfile()
+      .then((res) => {
+        const name = res?.user?.name?.trim()
+
+        if (isMounted) setUserName(name || 'Student')
+      })
+      .catch(() => {
+        if (isMounted) setUserName('Student')
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   return (
     <>
@@ -114,12 +134,12 @@ export function Sidebar({
           <div className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
             <img
               src="/avatars/avatar-2.png"
-              alt="Aniket Sharma"
+              alt={userName}
               className="size-10 rounded-full object-cover"
             />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
-                Aniket Sharma
+                {userName}
               </p>
               <p className="truncate text-xs text-muted-foreground">
                 Level {sidebarStats.level} · {sidebarStats.badges[0] ?? 'Active'}

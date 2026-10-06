@@ -1,8 +1,8 @@
 import { Response } from "express";
-import User from "../models/User";
 import Goal from "../models/Goal";
 import AccountabilityContract from "../models/AccountabilityContract";
 import { awardBadge } from "../utils/badgeUtils";
+import { updateStudySyncProfile } from "../services/clerkProfile";
 
 export const createContract = async (
   req: any,
@@ -17,7 +17,10 @@ export const createContract = async (
       penaltyReputation,
     } = req.body;
 
-    const goal = await Goal.findById(goalId);
+    const goal = await Goal.findOne({
+      _id: goalId,
+      userId: req.user.id,
+    });
 
     if (!goal) {
       return res.status(404).json({
@@ -84,10 +87,10 @@ export const completeContract = async (
   res: Response
 ) => {
   try {
-    const contract =
-      await AccountabilityContract.findById(
-        req.params.id
-      );
+    const contract = await AccountabilityContract.findOne({
+      _id: req.params.id,
+      creatorId: req.user.id,
+    });
 
     if (!contract) {
       return res.status(404).json({
@@ -113,46 +116,20 @@ export const completeContract = async (
 
     await contract.save();
 
-    const user =
-      await User.findById(
-        req.user.id
-      );
+    await updateStudySyncProfile(req.user.id, (profile) => {
+      profile.xp += contract.rewardXp;
+      profile.reputation += 25;
+      profile.accountabilityScore += 10;
+      profile.level = Math.floor(profile.xp / 100) + 1;
 
-    if (user) {
-      user.xp +=
-        contract.rewardXp;
-
-      user.reputation += 25;
-
-      user.accountabilityScore += 10;
-
-      user.level =
-        Math.floor(
-          user.xp / 100
-        ) + 1;
-
-      if (
-        user.reputation >=
-        100
-      ) {
-        awardBadge(
-          user,
-          "Study Champion"
-        );
+      if (profile.reputation >= 100) {
+        awardBadge(profile, "Study Champion");
       }
 
-      if (
-        user.accountabilityScore >=
-        100
-      ) {
-        awardBadge(
-          user,
-          "Accountability Master"
-        );
+      if (profile.accountabilityScore >= 100) {
+        awardBadge(profile, "Accountability Master");
       }
-
-      await user.save();
-    }
+    });
 
     res.json({
       success: true,
@@ -176,10 +153,10 @@ export const missContract = async (
   res: Response
 ) => {
   try {
-    const contract =
-      await AccountabilityContract.findById(
-        req.params.id
-      );
+    const contract = await AccountabilityContract.findOne({
+      _id: req.params.id,
+      creatorId: req.user.id,
+    });
 
     if (!contract) {
       return res.status(404).json({
@@ -205,28 +182,16 @@ export const missContract = async (
 
     await contract.save();
 
-    const user =
-      await User.findById(
-        req.user.id
+    await updateStudySyncProfile(req.user.id, (profile) => {
+      profile.reputation = Math.max(
+        0,
+        profile.reputation - contract.penaltyReputation
       );
-
-    if (user) {
-      user.reputation =
-        Math.max(
-          0,
-          user.reputation -
-            contract.penaltyReputation
-        );
-
-      user.accountabilityScore =
-        Math.max(
-          0,
-          user.accountabilityScore -
-            10
-        );
-
-      await user.save();
-    }
+      profile.accountabilityScore = Math.max(
+        0,
+        profile.accountabilityScore - 10
+      );
+    });
 
     res.json({
       success: true,

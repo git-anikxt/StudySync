@@ -1,13 +1,11 @@
-import User from "../models/User";
+import { getClerkUserProfile, updateStudySyncProfile } from "../services/clerkProfile";
 
 export const getProfile = async (
   req: any,
   res: any
 ) => {
   try {
-    const user = await User.findById(
-      req.user.id
-    ).select("-password");
+    const user = await getClerkUserProfile(req.user.id);
 
     res.json({
       success: true,
@@ -27,38 +25,13 @@ export const updateProfile = async (
   res: any
 ) => {
   try {
-    const user = await User.findById(
-      req.user.id
-    );
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    user.semester =
-      req.body.semester ??
-      user.semester;
-
-    user.subjects =
-      req.body.subjects ??
-      user.subjects;
-
-    user.availability =
-      req.body.availability ??
-      user.availability;
-
-    user.bio =
-      req.body.bio ??
-      user.bio;
-
-    user.avatar =
-      req.body.avatar ??
-      user.avatar;
-
-    await user.save();
+    const user = await updateStudySyncProfile(req.user.id, (profile) => {
+      profile.semester = req.body.semester ?? profile.semester;
+      profile.subjects = req.body.subjects ?? profile.subjects;
+      profile.availability = req.body.availability ?? profile.availability;
+      profile.bio = req.body.bio ?? profile.bio;
+      profile.avatar = req.body.avatar ?? profile.avatar;
+    });
 
     res.json({
       success: true,

@@ -1,4 +1,8 @@
 import StudyRoom from "../models/StudyRoom";
+import {
+  getClerkProfile,
+  getClerkUsersById,
+} from "../services/clerkProfile";
 
 export const createRoom = async (
   req: any,
@@ -33,19 +37,27 @@ export const getRooms = async (
   res: any
 ) => {
   try {
-    const rooms =
-      await StudyRoom.find()
-        .populate(
-          "createdBy",
-          "name"
-        )
-        .sort({
+    const rooms = await StudyRoom.find().sort({
           createdAt: -1,
         });
+    const users = await getClerkUsersById(
+      rooms.map((room) => room.createdBy)
+    );
+    const profiles = new Map(
+      users.map((user) => [user.id, getClerkProfile(user)])
+    );
 
     res.json({
       success: true,
-      rooms,
+      rooms: rooms.map((room) => {
+        const creator = profiles.get(room.createdBy);
+        return {
+          ...room.toObject(),
+          createdBy: creator
+            ? { _id: creator._id, name: creator.name }
+            : null,
+        };
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -152,17 +164,34 @@ export const getRoomParticipants = async (
   res: any
 ) => {
   try {
-    const room =
-      await StudyRoom.findById(
-        req.params.id
-      ).populate(
-        "participants",
-        "name xp reputation"
-      );
+    const room = await StudyRoom.findById(req.params.id);
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: "Room not found",
+      });
+    }
+
+    const users = await getClerkUsersById(room.participants);
+    const profiles = new Map(
+      users.map((user) => [user.id, getClerkProfile(user)])
+    );
 
     res.json({
       success: true,
-      room,
+      room: {
+        ...room.toObject(),
+        participants: room.participants
+          .map((id) => profiles.get(id))
+          .filter((profile) => profile !== undefined)
+          .map((profile) => ({
+            _id: profile._id,
+            name: profile.name,
+            xp: profile.xp,
+            reputation: profile.reputation,
+          })),
+      },
     });
   } catch (error) {
     console.error(error);

@@ -1,5 +1,5 @@
 import Session from "../models/Session";
-import User from "../models/User";
+import { updateStudySyncProfile } from "../services/clerkProfile";
 import { awardBadge } from "../utils/badgeUtils";
 export const getMySessions = async (
   req: any,
@@ -62,10 +62,10 @@ export const endSession = async (
   res: any
 ) => {
   try {
-    const session =
-      await Session.findById(
-        req.params.id
-      );
+    const session = await Session.findOne({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
 
     if (!session) {
       return res.status(404).json({
@@ -85,26 +85,21 @@ export const endSession = async (
 
     await session.save();
 
-    const user =
-      await User.findById(
-        session.userId
-      );
-
     let earnedXP = 0;
     let earnedReputation = 0;
+    let currentLevel: number | undefined;
+    let currentStreak: number | undefined;
 
-    if (user) {
+    const user = await updateStudySyncProfile(req.user.id, (profile) => {
       const today = new Date();
 
       const lastStudy =
-        user.lastStudyDate
-          ? new Date(
-              user.lastStudyDate
-            )
+        profile.lastStudyDate
+          ? new Date(profile.lastStudyDate)
           : null;
 
       if (!lastStudy) {
-        user.streak = 1;
+        profile.streak = 1;
       } else {
         const diffDays =
           Math.floor(
@@ -117,28 +112,21 @@ export const endSession = async (
           );
 
         if (diffDays === 1) {
-          user.streak += 1;
+          profile.streak += 1;
         } else if (
           diffDays > 1
         ) {
-          user.streak = 1;
+          profile.streak = 1;
         }
       }
-      if (user.streak >= 7) {
-  awardBadge(
-    user,
-    "7 Day Streak"
-  );
-}
+      if (profile.streak >= 7) {
+        awardBadge(profile, "7 Day Streak");
+      }
 
-if (user.streak >= 30) {
-  awardBadge(
-    user,
-    "30 Day Consistency"
-  );
-}
-      user.lastStudyDate =
-        today;
+      if (profile.streak >= 30) {
+        awardBadge(profile, "30 Day Consistency");
+      }
+      profile.lastStudyDate = today.toISOString();
 
       earnedXP = Math.max(
         10,
@@ -147,12 +135,9 @@ if (user.streak >= 30) {
         ) * 10
       );
 
-      user.xp += earnedXP;
+      profile.xp += earnedXP;
 
-      user.level =
-        Math.floor(
-          user.xp / 100
-        ) + 1;
+      profile.level = Math.floor(profile.xp / 100) + 1;
 
       earnedReputation =
         Math.max(
@@ -162,11 +147,10 @@ if (user.streak >= 30) {
           )
         );
 
-      user.reputation +=
-        earnedReputation;
-
-      await user.save();
-    }
+      profile.reputation += earnedReputation;
+      currentLevel = profile.level;
+      currentStreak = profile.streak;
+    });
 
     res.json({
       success: true,
@@ -178,11 +162,8 @@ if (user.streak >= 30) {
 
       earnedReputation,
 
-      level:
-        user?.level,
-
-      streak:
-        user?.streak,
+      level: currentLevel,
+      streak: currentStreak,
 
       session,
     });

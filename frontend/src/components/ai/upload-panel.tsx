@@ -24,6 +24,17 @@ type UploadPanelProps = {
 }
 
 const initialFiles: UploadedFile[] = []
+const maxFileSize = 10 * 1024 * 1024
+
+function isSupportedFile(file: File) {
+  const name = file.name.toLowerCase()
+  return (
+    file.type === 'text/plain' ||
+    file.type === 'application/pdf' ||
+    name.endsWith('.txt') ||
+    name.endsWith('.pdf')
+  )
+}
 
 export function UploadPanel({
   onNotesLoaded,
@@ -35,54 +46,67 @@ export function UploadPanel({
     async (list: FileList | null) => {
       if (!list || list.length === 0) return
 
-      const extracted: { name: string; text: string }[] = []
+      const selectedFiles = Array.from(list)
+      const uploadItems = selectedFiles.map((file) => {
+        const id = crypto.randomUUID()
+        const error = !isSupportedFile(file)
+          ? 'Upload a TXT or PDF file.'
+          : file.size > maxFileSize
+            ? 'Files must be 10 MB or smaller.'
+            : undefined
 
-      await Promise.all(
-        Array.from(list).map(async (f, i) => {
-          const id = `${Date.now()}-${i}`
+        return { id, file, error }
+      })
 
-          setFiles((prev) => [
-            {
-              id,
-              name: f.name,
-              size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
-              status: 'processing' as const,
-            },
-            ...prev,
-          ])
+      setFiles((prev) => [
+        ...uploadItems.map(({ id, file, error }) => ({
+          id,
+          name: file.name,
+          size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+          status: error ? ('failed' as const) : ('processing' as const),
+          error,
+        })),
+        ...prev,
+      ])
+
+      const extracted = await Promise.all(
+        uploadItems.map(async ({ id, file, error }, index) => {
+          if (error) return null
 
           try {
-            const { text } = await extractNotes(f)
-
-            extracted.push({ name: f.name, text })
+            const { text } = await extractNotes(file)
 
             setFiles((prev) =>
-              prev.map((file) =>
-                file.id === id
-                  ? { ...file, status: 'ready' as const }
-                  : file,
+              prev.map((item) =>
+                item.id === id ? { ...item, status: 'ready' as const } : item,
               ),
             )
+            return { index, name: file.name, text }
           } catch (err: any) {
             const message =
               err?.response?.data?.message ??
-              `Couldn't extract text from ${f.name}`
+              `Couldn't extract text from ${file.name}`
 
             setFiles((prev) =>
-              prev.map((file) =>
-                file.id === id
-                  ? { ...file, status: 'failed' as const, error: message }
-                  : file,
+              prev.map((item) =>
+                item.id === id
+                  ? { ...item, status: 'failed' as const, error: message }
+                  : item,
               ),
             )
+            return null
           }
         }),
       )
 
-      if (extracted.length > 0) {
+      const successfulFiles = extracted
+        .filter((file): file is NonNullable<typeof file> => file !== null)
+        .sort((first, second) => first.index - second.index)
+
+      if (successfulFiles.length > 0) {
         onNotesLoaded(
-          extracted
-            .map((f) => `--- ${f.name} ---\n${f.text}`)
+          successfulFiles
+            .map((file) => `--- ${file.name} ---\n${file.text}`)
             .join('\n\n'),
         )
       }
@@ -135,7 +159,10 @@ export function UploadPanel({
             accept=".txt,.pdf"
             multiple
             className="sr-only"
-            onChange={(e) => addFiles(e.target.files)}
+            onChange={(event) => {
+              addFiles(event.target.files)
+              event.target.value = ''
+            }}
           />
         </label>
       </div>

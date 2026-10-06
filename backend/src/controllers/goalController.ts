@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 
 import Goal from "../models/Goal";
-import User from "../models/User";
+import { updateStudySyncProfile } from "../services/clerkProfile";
 import { awardBadge } from "../utils/badgeUtils";
 
 export const createGoal = async (
@@ -63,14 +63,18 @@ export const updateGoal = async (
   res: Response
 ) => {
   try {
-    const goal =
-      await Goal.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        {
-          new: true,
-        }
-      );
+    const goal = await Goal.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.id },
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!goal) {
+      return res.status(404).json({
+        success: false,
+        message: "Goal not found",
+      });
+    }
 
     res.json({
       success: true,
@@ -86,13 +90,21 @@ export const updateGoal = async (
 };
 
 export const deleteGoal = async (
-  req: Request,
+  req: any,
   res: Response
 ) => {
   try {
-    await Goal.findByIdAndDelete(
-      req.params.id
-    );
+    const goal = await Goal.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
+
+    if (!goal) {
+      return res.status(404).json({
+        success: false,
+        message: "Goal not found",
+      });
+    }
 
     res.json({
       success: true,
@@ -112,9 +124,10 @@ export const completeGoal = async (
   res: Response
 ) => {
   try {
-    const goal = await Goal.findById(
-      req.params.id
-    );
+    const goal = await Goal.findOne({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
 
     if (!goal) {
       return res.status(404).json({
@@ -134,39 +147,23 @@ export const completeGoal = async (
 
     await goal.save();
 
-    const user = await User.findById(
-      req.user.id
-    );
+    const user = await updateStudySyncProfile(req.user.id, (profile) => {
+      profile.xp += 50;
+      profile.reputation += 10;
+      profile.level = Math.floor(profile.xp / 100) + 1;
 
-    if (user) {
-      user.xp += 50;
-
-      user.reputation += 10;
-
-      user.level =
-        Math.floor(user.xp / 100) + 1;
-
-      if (
-        user.reputation >= 100
-      ) {
-        awardBadge(
-          user,
-          "Study Champion"
-        );
+      if (profile.reputation >= 100) {
+        awardBadge(profile, "Study Champion");
       }
-
-      await user.save();
-    }
+    });
 
     res.json({
       success: true,
       message: "Goal completed",
       xpEarned: 50,
       reputationEarned: 10,
-      currentLevel:
-        user?.level,
-      badges:
-        user?.badges,
+      currentLevel: user.level,
+      badges: user.badges,
     });
   } catch (error) {
     console.error(error);

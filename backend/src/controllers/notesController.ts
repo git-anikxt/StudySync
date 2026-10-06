@@ -13,13 +13,14 @@ export const extractNotes = async (
     }
 
     const { mimetype, originalname, buffer } = req.file;
+    const extension = originalname.toLowerCase().split(".").pop();
 
     let text = "";
 
-    if (mimetype === "text/plain") {
+    if (mimetype === "text/plain" || extension === "txt") {
       // Plain text — decode the buffer directly, nothing to parse.
       text = buffer.toString("utf-8");
-    } else if (mimetype === "application/pdf") {
+    } else if (mimetype === "application/pdf" || extension === "pdf") {
       // Parse the PDF in memory — nothing is written to disk.
       const parser = new PDFParse({ data: buffer });
 
@@ -34,6 +35,14 @@ export const extractNotes = async (
         success: false,
         message:
           "Unsupported file type. Upload a .txt or .pdf file.",
+      });
+    }
+
+    if (!text.trim()) {
+      return res.status(422).json({
+        success: false,
+        message:
+          "No selectable text was found. Scanned PDFs require OCR and cannot be extracted here.",
       });
     }
 

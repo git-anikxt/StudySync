@@ -1,4 +1,5 @@
-import { FileText, CheckCircle2 } from 'lucide-react'
+import { useState } from 'react'
+import { FileText, CheckCircle2, XCircle } from 'lucide-react'
 
 export type SummaryData = {
   title: string
@@ -31,9 +32,9 @@ export function SummaryCard({ data }: { data: SummaryData }) {
 }
 
 export type QuizQuestion = {
-  q: string
+  question: string
   options: string[]
-  answer: number
+  correctIndex: number
 }
 
 export function QuizCard({
@@ -43,37 +44,72 @@ export function QuizCard({
   title: string
   questions: QuizQuestion[]
 }) {
+  const [answers, setAnswers] = useState<Record<number, number>>({})
+
   return (
     <div className="rounded-2xl border border-border bg-background p-4">
       <p className="text-sm font-semibold text-foreground">{title}</p>
       <div className="mt-3 flex flex-col gap-4">
-        {questions.map((item, qi) => (
-          <div key={qi}>
-            <p className="text-sm font-medium text-foreground text-pretty">
-              {qi + 1}. {item.q}
-            </p>
-            <div className="mt-2 grid gap-1.5">
-              {item.options.map((opt, oi) => (
-                <div
-                  key={oi}
-                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
-                    oi === item.answer
-                      ? 'border-primary/40 bg-accent text-accent-foreground'
-                      : 'border-border text-muted-foreground'
+        {questions.map((item, qi) => {
+          const selectedIndex = answers[qi]
+          const hasAnswered = selectedIndex !== undefined
+          const isCorrect = selectedIndex === item.correctIndex
+
+          return (
+            <div key={qi}>
+              <p className="text-sm font-medium text-foreground text-pretty">
+                {qi + 1}. {item.question}
+              </p>
+              <div className="mt-2 grid gap-1.5">
+                {item.options.map((opt, oi) => (
+                  <button
+                    key={oi}
+                    type="button"
+                    disabled={hasAnswered}
+                    aria-pressed={selectedIndex === oi}
+                    onClick={() =>
+                      setAnswers((current) => ({ ...current, [qi]: oi }))
+                    }
+                    className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-colors disabled:cursor-default ${
+                      !hasAnswered
+                        ? 'border-border text-muted-foreground hover:border-primary/40 hover:bg-accent/50'
+                        : oi === item.correctIndex
+                          ? 'border-primary/40 bg-accent text-accent-foreground'
+                          : oi === selectedIndex
+                            ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                            : 'border-border text-muted-foreground'
+                    }`}
+                  >
+                    <span className="flex size-5 items-center justify-center rounded-md bg-card text-xs font-semibold">
+                      {String.fromCharCode(65 + oi)}
+                    </span>
+                    {opt}
+                    {hasAnswered && oi === item.correctIndex && (
+                      <CheckCircle2 className="ml-auto size-4 text-primary" />
+                    )}
+                    {hasAnswered && oi === selectedIndex && !isCorrect && (
+                      <XCircle className="ml-auto size-4 text-destructive" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              {hasAnswered && (
+                <p
+                  className={`mt-2 text-xs font-medium ${
+                    isCorrect ? 'text-primary' : 'text-destructive'
                   }`}
+                  role="status"
                 >
-                  <span className="flex size-5 items-center justify-center rounded-md bg-card text-xs font-semibold">
-                    {String.fromCharCode(65 + oi)}
-                  </span>
-                  {opt}
-                  {oi === item.answer && (
-                    <CheckCircle2 className="ml-auto size-4 text-primary" />
-                  )}
-                </div>
-              ))}
+                  {isCorrect
+                    ? 'Correct!'
+                    : `Not quite. The correct answer is ${String.fromCharCode(
+                        65 + item.correctIndex,
+                      )}.`}
+                </p>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

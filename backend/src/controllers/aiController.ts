@@ -100,7 +100,8 @@ export const chat = async (
 
     res.status(500).json({
       success: false,
-      message: "Chat failed",
+      message:
+        "The AI assistant couldn't generate a response. Please try again shortly.",
     });
   }
 };

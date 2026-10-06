@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { Sparkles, Send, FileText, Layers, HelpCircle, Lightbulb } from 'lucide-react'
 import { FlashcardDeck, type Flashcard } from './flashcard-deck'
 import {
@@ -10,6 +11,7 @@ import {
   type QuizQuestion,
 } from './result-cards'
 import { sendChat } from '@/src/services/ai'
+import { getMyProfile } from '@/src/services/users'
 
 type Message = {
   id: string
@@ -20,11 +22,31 @@ type Message = {
   quiz?: { title: string; questions: QuizQuestion[] }
 }
 
-const greeting: Message = {
-  id: 'greeting',
-  role: 'assistant',
-  text: 'Hi Aniket! Upload your notes or pick a quick action and I\u2019ll generate summaries, flashcards, or a quiz from them. You can also just ask me anything.',
+function buildGreeting(firstName?: string): Message {
+  return {
+    id: 'greeting',
+    role: 'assistant',
+    text: firstName
+      ? `Hi ${firstName}! Upload your notes or pick a quick action and I\u2019ll generate summaries, flashcards, or a quiz from them. You can also just ask me anything.`
+      : 'Hi there! Upload your notes or pick a quick action and I\u2019ll generate summaries, flashcards, or a quiz from them. You can also just ask me anything.',
+  }
 }
+
+// Tailwind's preflight strips list markers and margins, so restore the basics
+// markdown output needs without touching the message bubble's own styling.
+const markdownClass = [
+  'text-pretty',
+  '[&_p]:my-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0',
+  '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5',
+  '[&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5',
+  '[&_li]:my-0.5',
+  '[&_h1]:mt-3 [&_h1]:text-base [&_h1]:font-semibold',
+  '[&_h2]:mt-3 [&_h2]:text-base [&_h2]:font-semibold',
+  '[&_h3]:mt-2 [&_h3]:text-sm [&_h3]:font-semibold',
+  '[&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-background/70 [&_pre]:p-3',
+  '[&_code]:rounded [&_code]:bg-background/70 [&_code]:px-1',
+  '[&_a]:underline',
+].join(' ')
 
 
 const starters = [
@@ -38,7 +60,24 @@ const actionPrompts: Record<string, string> = {
   summary: 'Summarize my notes',
   flashcards: 'Make flashcards from my notes',
   quiz: 'Create a quiz from my notes',
-  explain: 'Explain nucleophilic addition',
+  explain: 'Explain the most important concept in my notes with examples',
+}
+
+function getChatErrorMessage(error: unknown) {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error
+  ) {
+    const response = (error as {
+      response?: { data?: { message?: string } }
+    }).response
+    if (response?.data?.message) return response.data.message
+  }
+
+  return error instanceof Error
+    ? error.message
+    : "I couldn't generate a response. Please try again."
 }
 
 export function ChatInterface({
@@ -50,7 +89,7 @@ export function ChatInterface({
   pendingAction: string | null
   onActionHandled: () => void
 }) {
-  const [messages, setMessages] = useState<Message[]>([greeting])
+  const [messages, setMessages] = useState<Message[]>([buildGreeting()])
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -125,7 +164,7 @@ export function ChatInterface({
       {
         id: `${Date.now()}-e`,
         role: 'assistant',
-        text: 'Failed to generate summary.',
+        text: getChatErrorMessage(err),
       },
     ])
   } finally {
@@ -144,6 +183,34 @@ export function ChatInterface({
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, thinking])
+
+  useEffect(() => {
+    let isMounted = true
+
+    getMyProfile()
+      .then((res) => {
+        const fullName = res?.user?.name?.trim()
+
+        if (!isMounted || !fullName) return
+
+        const firstName = fullName.split(/\s+/)[0]
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === 'greeting'
+              ? { ...m, text: buildGreeting(firstName).text }
+              : m,
+          ),
+        )
+      })
+      .catch(() => {
+        // Keep the generic greeting when the profile can't be loaded.
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   return (
     <div className="flex h-[calc(100vh-8rem)] min-h-[32rem] flex-col rounded-3xl border border-border bg-card">
@@ -177,7 +244,14 @@ export function ChatInterface({
                   : 'bg-muted text-foreground'
               }`}
             >
-              {m.text && <p className="text-pretty">{m.text}</p>}
+              {m.text &&
+                (m.role === 'user' ? (
+                  <p className="text-pretty">{m.text}</p>
+                ) : (
+                  <div className={markdownClass}>
+                    <ReactMarkdown>{m.text}</ReactMarkdown>
+                  </div>
+                ))}
               {m.summary && (
                 <div className="mt-3">
                   <SummaryCard data={m.summary} />

@@ -2,16 +2,3 @@
 [browser] Clerk: Clerk has been loaded with development keys. Development instances have strict usage limits and should not be used when deploying your application to production. Learn more: https://clerk.com/docs/deployments/overview (https://natural-skylark-6212.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js:19:7048)
 [browser] Clerk: Clerk has been loaded with development keys. Development instances have strict usage limits and should not be used when deploying your application to production. Learn more: https://clerk.com/docs/deployments/overview (https://natural-skylark-6212.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js:19:7048)
 [browser] Clerk: Clerk has been loaded with development keys. Development instances have strict usage limits and should not be used when deploying your application to production. Learn more: https://clerk.com/docs/deployments/overview (https://natural-skylark-6212.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js:19:7048)
-[browser] Cannot initialize Smart CAPTCHA widget because the `clerk-captcha` DOM element was not found; falling back to Invisible CAPTCHA widget. If you are using a custom flow, visit https://clerk.com/docs/guides/development/custom-flows/bot-sign-up-protection for instructions 
-    at c (https://natural-skylark-6212.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js:5:104536)
-    at async h.managedOrInvisible (https://natural-skylark-6212.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js:5:107862)
-    at async m.create (https://natural-skylark-6212.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js:3:50330)
-    at async handleSubmit (src/app/register/page.tsx:42:22)
-  40 |       const lastName = nameParts.slice(1).join(' ')
-  41 |
-> 42 |       const result = await signUp.create({
-     |                      ^
-  43 |         emailAddress: email,
-  44 |         password,
-  45 |         firstName, (https://natural-skylark-6212.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js:5:104536)
-[browser] [Cloudflare Turnstile] Ignored message from unexpected source for event: requestExtraParams. (https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit:2:17362)

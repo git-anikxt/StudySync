@@ -3,8 +3,7 @@ import mongoose from "mongoose";
 const contractSchema = new mongoose.Schema(
   {
     creatorId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      type: String,
       required: true,
     },
 

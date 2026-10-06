@@ -50,10 +50,14 @@ export function WelcomeSection({ stats }: { stats: DashboardStats }) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-muted-foreground">
-            Tuesday, June 9
+            {new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+            })}
           </p>
           <h1 className="mt-1 text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Welcome back, Aniket
+            Welcome back, {stats.name?.trim() || 'there'}
           </h1>
           <p className="mt-1 text-pretty text-muted-foreground">
             You&apos;re on a {stats.streak}-day streak. Keep the momentum going today.

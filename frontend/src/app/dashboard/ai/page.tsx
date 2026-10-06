@@ -32,7 +32,13 @@ export default function AiAssistantPage() {
           <div className="grid gap-6 lg:grid-cols-12">
             {/* Left */}
             <div className="flex flex-col gap-6 lg:col-span-3">
-              <UploadPanel onNotesLoaded={setUploadedNotes} />
+              <UploadPanel
+                onNotesLoaded={(notes) =>
+                  setUploadedNotes((current) =>
+                    [current, notes].filter(Boolean).join('\n\n'),
+                  )
+                }
+              />
               <RecentSessions />
             </div>
 

@@ -1,35 +1,36 @@
 import { Request, Response } from "express";
-import User from "../models/User";
+import {
+  getAllClerkUsers,
+  getStudySyncMetadata,
+} from "../services/clerkProfile";
 
 export const getLeaderboard = async (
   req: Request,
   res: Response
 ) => {
   try {
-    const users = await User.find(
-      {},
-      {
-        password: 0,
-      }
-    );
+    const users = await getAllClerkUsers();
 
     const leaderboard = users
       .map((user) => {
+        const profile = getStudySyncMetadata(user);
         const score =
-          user.xp +
-          user.reputation * 2 +
-          user.streak * 5;
+          profile.xp +
+          profile.reputation * 2 +
+          profile.streak * 5;
+        const name =
+          [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+          user.username ||
+          user.id;
 
         return {
-          userId: user._id,
-          name: user.name,
-          xp: user.xp,
-          reputation:
-            user.reputation,
-          level: user.level,
-          streak: user.streak,
-          badges:
-            user.badges,
+          userId: user.id,
+          name,
+          xp: profile.xp,
+          reputation: profile.reputation,
+          level: profile.level,
+          streak: profile.streak,
+          badges: profile.badges,
           score,
         };
       })

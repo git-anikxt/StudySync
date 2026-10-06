@@ -5,13 +5,25 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 
+import {
+  SocialAuthButtons,
+  type SocialProvider,
+} from '@/src/components/auth/social-auth-buttons'
 import { Button } from '@/src/components/ui/button'
 
 function clerkErrorMessage(err: unknown, fallback: string): string {
-  const errors = (err as { errors?: Array<{ message?: string }> } | null)
-    ?.errors
+  const errors =
+    typeof err === 'object' && err !== null && 'errors' in err
+      ? (err as {
+          errors?: Array<{ message?: string; longMessage?: string }>
+        }).errors
+      : undefined
 
-  return errors?.[0]?.message ?? fallback
+  return (
+    errors?.[0]?.longMessage ??
+    errors?.[0]?.message ??
+    (err instanceof Error ? err.message : fallback)
+  )
 }
 
 export default function RegisterPage() {
@@ -24,6 +36,27 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [verificationRequired, setVerificationRequired] = useState(false)
   const [code, setCode] = useState('')
+
+  async function handleSocialSignUp(strategy: SocialProvider) {
+    if (!signUp) {
+      setError('Sign up is not ready yet. Please try again.')
+      return
+    }
+
+    setError('')
+    setIsSubmitting(true)
+
+    try {
+      await signUp.authenticateWithRedirect({
+        strategy,
+        redirectUrl: '/sso-callback',
+        redirectUrlComplete: '/dashboard',
+      })
+    } catch (err) {
+      setError(clerkErrorMessage(err, 'Unable to start social sign-up.'))
+      setIsSubmitting(false)
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -47,6 +80,9 @@ export default function RegisterPage() {
       })
 
       if (result.status === 'complete') {
+        if (!result.createdSessionId) {
+          throw new Error('Account created without a session. Please log in.')
+        }
         await setActive({ session: result.createdSessionId })
 
         router.replace('/dashboard')
@@ -62,7 +98,11 @@ export default function RegisterPage() {
         return
       }
 
-      setError('Unable to register.')
+      setError(
+        result.status === 'abandoned'
+          ? 'This sign-up attempt expired. Please submit the form again.'
+          : `Account creation could not continue (${result.status ?? 'unknown status'}).`,
+      )
     } catch (err) {
       setError(clerkErrorMessage(err, 'Unable to register.'))
     } finally {
@@ -85,11 +125,16 @@ export default function RegisterPage() {
       })
 
       if (result.status === 'complete') {
+        if (!result.createdSessionId) {
+          throw new Error('Email verified without a session. Please log in.')
+        }
         await setActive({ session: result.createdSessionId })
 
         router.replace('/dashboard')
       } else {
-        setError('Unable to verify your email.')
+        setError(
+          `Email verification could not continue (${result.status ?? 'unknown status'}).`,
+        )
       }
     } catch (err) {
       setError(clerkErrorMessage(err, 'Unable to verify your email.'))
@@ -202,6 +247,11 @@ export default function RegisterPage() {
           <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? 'Creating account...' : 'Create account'}
           </Button>
+
+          <SocialAuthButtons
+            disabled={isSubmitting}
+            onAuthenticate={handleSocialSignUp}
+          />
         </div>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
